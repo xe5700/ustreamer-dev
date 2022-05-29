@@ -611,7 +611,7 @@ static void _help(FILE *fp, device_s *dev, encoder_s *enc, stream_s *stream, ser
 	SAY("                                             * HW  ───────── Use pre-encoded MJPEG frames directly from camera hardware;");
 	SAY("                                             * M2M-VIDEO  ── GPU-accelerated MJPEG encoding using V4L2 M2M video interface;");
 	SAY("                                             * M2M-IMAGE  ── GPU-accelerated JPEG encoding using V4L2 M2M image interface;");
-	SAY("											  * RKMPP ─────── GPU-accelerated H264 encoding using Rockchip MPP interface for Rockchip hardware (MJPEG still use HW)");
+	SAY("                                             * RKMPP ─────── VPU-accelerated H264 encoding using Rockchip MPP interface for Rockchip hardware (MJPEG still use HW)");
 	SAY("                                             * NOOP  ─────── Don't compress MJPEG stream (do nothing).\n");
 	SAY("    -g|--glitched-resolutions <WxH,...>  ─ It doesn't do anything. Still here for compatibility.\n");
 	SAY("    -k|--blank <path>  ─────────────────── Path to JPEG file that will be shown when the device is disconnected");
