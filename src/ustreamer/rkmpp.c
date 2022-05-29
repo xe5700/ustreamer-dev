@@ -143,7 +143,7 @@ static mpp_encoder_s *_mpp_encoder_init(
         return NULL;
     }
 
-    ret = mpp_init(&enc->ctx, MPP_CTX_ENC, enc->output_format);
+    ret = mpp_init(enc->ctx, MPP_CTX_ENC, enc->output_format);
 
     if (MPP_OK != ret)
     {
@@ -251,6 +251,7 @@ static int _mpp_encoder_prepare(mpp_encoder_s *enc, const frame_s *frame) {
 
 	_mpp_encoder_cleanup(enc);
     size_t mpp_buf_size = mpp_buffer_get_size(enc->frm_buf);
+    ret = mpp_buffer_get(NULL, &enc->frm_buf, frame->used);
     if(mpp_buf_size < frame->used){
         ret = mpp_buffer_get(NULL, &enc->frm_buf, frame->used);
         if(ret){
@@ -260,8 +261,6 @@ static int _mpp_encoder_prepare(mpp_encoder_s *enc, const frame_s *frame) {
     }
     MppFrame m_frame = &enc->frm;
     mpp_frame_init(&m_frame);
-    mpp_frame_set_buffer(m_frame, enc->frm_buf);
-    mpp_frame_set_buf_size(m_frame,frame->used);
     mpp_frame_set_width(m_frame, frame->width);
     mpp_frame_set_height(m_frame, frame->height);
     RK_U32 ver_stride = frame->used / frame->stride;
@@ -339,7 +338,7 @@ static int _mpp_encoder_prepare(mpp_encoder_s *enc, const frame_s *frame) {
     RK_U32 hor_stride = frame->stride * 8 / depth;
     mpp_frame_set_hor_stride(m_frame, frame->stride * 8 / depth);
     mpp_frame_set_fmt(m_frame, m_frame_format);
-    mpp_packet_init_with_buffer(&enc->pkt, enc->pkt_buf);
+    // mpp_packet_init(&enc->pkt, enc->pkt_buf);
     E_LOG_DEBUG("Apply input size: %dx%d(%dx%d)", frame->width, frame->height, hor_stride, ver_stride);
 	E_LOG_DEBUG("Encoder state: *** READY ***");
     ret = enc->api->control(enc->ctx, MPP_ENC_SET_CFG, enc->cfg);
@@ -356,10 +355,19 @@ static int _mpp_encoder_prepare(mpp_encoder_s *enc, const frame_s *frame) {
 
 
 static int _mpp_encoder_compress_raw(mpp_encoder_s *enc, const frame_s *src, frame_s *dest) {
+    int ret = 0;
 	E_LOG_DEBUG("Compressing new frame;");
-    
+    MppFrame m_frame = &enc->frm;
+    ret = mpp_buffer_get(NULL, enc->frm_buf, src->used);
+    if(ret){
+        E_LOG_ERROR("Mpp buffer get failed;")
+        goto error;
+    }
+    mpp_frame_set_buffer(m_frame, enc->frm_buf);
     void *p_buf = mpp_buffer_get_ptr(enc->frm_buf);
-    memcpy(src->data, p_buf, src->used);
+    memcpy(p_buf, src->data, src->used);
+    mpp_frame_set_buf_size(m_frame,src->used);
+    mpp_buffer_put(enc->frm_buf);
     enc->api->encode_put_frame(enc->ctx, enc->frm);
     size_t pos = 0;
     MppPacket pkt = enc->pkt;
