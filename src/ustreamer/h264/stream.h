@@ -32,17 +32,20 @@
 #include "../../libs/memsink.h"
 #include "../../libs/unjpeg.h"
 #include "../m2m.h"
+#include "../rkmpp.h"
+#include "../encoder.h"
 
 
 typedef struct {
 	memsink_s		*sink;
 	frame_s			*tmp_src;
 	frame_s			*dest;
-	m2m_encoder_s	*enc;
+	void			*enc;
+	encoder_type_e	enc_type;
 	atomic_bool		online;
 } h264_stream_s;
 
 
-h264_stream_s *h264_stream_init(memsink_s *sink, const char *path, unsigned bitrate, unsigned gop);
+h264_stream_s *h264_stream_init(memsink_s *sink, const char *path, unsigned bitrate, unsigned gop, encoder_type_e enc_type);
 void h264_stream_destroy(h264_stream_s *h264);
 void h264_stream_process(h264_stream_s *h264, const frame_s *frame, bool force_key);

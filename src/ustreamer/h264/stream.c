@@ -23,19 +23,41 @@
 #include "stream.h"
 
 
-h264_stream_s *h264_stream_init(memsink_s *sink, const char *path, unsigned bitrate, unsigned gop) {
+h264_stream_s *h264_stream_init(memsink_s *sink, const char *path, unsigned bitrate, unsigned gop, encoder_type_e enc_type) {
 	h264_stream_s *h264;
 	A_CALLOC(h264, 1);
+	h264->enc_type = enc_type;
 	h264->sink = sink;
 	h264->tmp_src = frame_init();
 	h264->dest = frame_init();
 	atomic_init(&h264->online, false);
-	h264->enc = m2m_h264_encoder_init("H264", path, bitrate, gop);
+	//Add rockchip mpp support
+	switch (h264->enc_type)
+	{
+#ifdef WITH_MPP
+	case ENCODER_TYPE_MPP:
+		h264->enc = (void*)mpp_h264_encoder_init("H264", path, bitrate, gop);
+		break;
+#endif
+	default:
+		h264->enc = (void*)m2m_h264_encoder_init("H264", path, bitrate, gop);
+		break;
+	}
 	return h264;
 }
 
 void h264_stream_destroy(h264_stream_s *h264) {
-	m2m_encoder_destroy(h264->enc);
+	switch (h264->enc_type)
+	{
+#ifdef WITH_MPP
+	case ENCODER_TYPE_MPP:
+		mpp_encoder_destroy((mpp_encoder_s*)h264->enc);
+		break;
+#endif
+	default:
+		m2m_encoder_destroy((m2m_encoder_s*)h264->enc);
+		break;
+	}
 	frame_destroy(h264->dest);
 	frame_destroy(h264->tmp_src);
 	free(h264);
@@ -47,6 +69,7 @@ void h264_stream_process(h264_stream_s *h264, const frame_s *frame, bool force_k
 	}
 
 	if (is_jpeg(frame->format)) {
+		//RPI use software jpeg decode,but rockchip mpp has hardware jpeg decode.
 		long double now = get_now_monotonic();
 		LOG_DEBUG("H264: Input frame is JPEG; decoding ...");
 		if (unjpeg(frame, h264->tmp_src, true) < 0) {
@@ -57,8 +80,22 @@ void h264_stream_process(h264_stream_s *h264, const frame_s *frame, bool force_k
 	}
 
 	bool online = false;
-	if (!m2m_encoder_compress(h264->enc, frame, h264->dest, force_key)) {
-		online = !memsink_server_put(h264->sink, h264->dest);
+	
+	switch (h264->enc_type)
+	{
+#ifdef WITH_MPP
+	case ENCODER_TYPE_MPP:{
+		if(!mpp_encoder_compress(h264->enc, frame, h264->dest, force_key)){
+			online = !memsink_server_put(h264->sink, h264->dest);
+		}
+		break;
+	}
+#endif
+	default:
+		if (!m2m_encoder_compress(h264->enc, frame, h264->dest, force_key)) {
+			online = !memsink_server_put(h264->sink, h264->dest);
+		}
+		break;
 	}
 	atomic_store(&h264->online, online);
 }

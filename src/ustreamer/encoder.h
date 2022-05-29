@@ -43,7 +43,7 @@
 #include "encoders/hw/encoder.h"
 
 
-#define ENCODER_TYPES_STR "CPU, HW, M2M-VIDEO, M2M-IMAGE, NOOP"
+#define ENCODER_TYPES_STR "CPU, HW, M2M-VIDEO, M2M-IMAGE, MPP, NOOP"
 
 typedef enum {
 	ENCODER_TYPE_UNKNOWN, // Only for encoder_parse_type() and main()
@@ -51,6 +51,7 @@ typedef enum {
 	ENCODER_TYPE_HW,
 	ENCODER_TYPE_M2M_VIDEO,
 	ENCODER_TYPE_M2M_IMAGE,
+	ENCODER_TYPE_MPP,
 	ENCODER_TYPE_NOOP,
 } encoder_type_e;
 

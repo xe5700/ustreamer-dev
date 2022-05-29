@@ -83,7 +83,7 @@ void stream_loop(stream_s *stream) {
 	LOG_INFO("Using desired FPS: %u", stream->dev->desired_fps);
 
 	if (stream->h264_sink) {
-		RUN(h264) = h264_stream_init(stream->h264_sink, stream->h264_m2m_path, stream->h264_bitrate, stream->h264_gop);
+		RUN(h264) = h264_stream_init(stream->h264_sink, stream->h264_m2m_path, stream->h264_bitrate, stream->h264_gop, stream->enc->type);
 	}
 
 	for (workers_pool_s *pool; (pool = _stream_init_loop(stream)) != NULL;) {
