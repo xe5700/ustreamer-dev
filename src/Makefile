@@ -8,6 +8,7 @@ LDFLAGS ?=
 _INC ?=
 
 # =====
+_USTR = ustreamer.bin
 _DUMP = ustreamer-dump.bin
 
 _CFLAGS = -MD -c -std=c11 -Wall -Wextra -D_GNU_SOURCE $(CFLAGS)
@@ -97,7 +98,7 @@ $(_USTR): $(_USTR_SRCS:%.c=$(_BUILD)/%.o)
 
 $(_DUMP): $(_DUMP_SRCS:%.c=$(_BUILD)/%.o)
 	$(info == LD $@)
-	@ $(CC) $^ -o $@ $(_LDFLAGS) $(_DUMP_LIBS) $(INC)
+	@ $(CC) $^ -o $@ $(_LDFLAGS) $(_DUMP_LIBS)
 
 
 $(_BUILD)/%.o: %.c
