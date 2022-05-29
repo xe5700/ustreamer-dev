@@ -59,6 +59,11 @@ ifneq ($(call optbool,$(WITH_PTHREAD_NP)),)
 override _CFLAGS += -DWITH_PTHREAD_NP
 endif
 
+WITH_RKMPP ?= 0
+ifneq ($(call optbool,$(WITH_RKMPP)),)
+override _CFLAGS += -DWITH_RKMPP
+_USTR_LIBS += $(shell pkg-config --libs rockchip_mpp)
+endif
 
 WITH_SETPROCTITLE ?= 1
 ifneq ($(call optbool,$(WITH_SETPROCTITLE)),)

@@ -1,7 +1,7 @@
 #include "rkmpp.h"
 
 
-#ifdef WITH_MPP
+#ifdef WITH_RKMPP
 static mpp_encoder_s *_mpp_encoder_init(
 	const char *name, const char *path, unsigned output_format,
 	unsigned fps, bool allow_dma, MppEncCfg cfg);

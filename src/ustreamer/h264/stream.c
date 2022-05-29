@@ -34,7 +34,7 @@ h264_stream_s *h264_stream_init(memsink_s *sink, const char *path, unsigned bitr
 	//Add rockchip mpp support
 	switch (h264->enc_type)
 	{
-#ifdef WITH_MPP
+#ifdef WITH_RKMPP
 	case ENCODER_TYPE_RKMPP:
 		h264->enc = (void*)mpp_h264_encoder_init("H264", path, bitrate, gop);
 		break;
@@ -49,7 +49,7 @@ h264_stream_s *h264_stream_init(memsink_s *sink, const char *path, unsigned bitr
 void h264_stream_destroy(h264_stream_s *h264) {
 	switch (h264->enc_type)
 	{
-#ifdef WITH_MPP
+#ifdef WITH_RKMPP
 	case ENCODER_TYPE_RKMPP:
 		mpp_encoder_destroy((mpp_encoder_s*)h264->enc);
 		break;
@@ -83,7 +83,7 @@ void h264_stream_process(h264_stream_s *h264, const frame_s *frame, bool force_k
 	
 	switch (h264->enc_type)
 	{
-#ifdef WITH_MPP
+#ifdef WITH_RKMPP
 	case ENCODER_TYPE_RKMPP:{
 		if(!mpp_encoder_compress(h264->enc, frame, h264->dest, force_key)){
 			online = !memsink_server_put(h264->sink, h264->dest);

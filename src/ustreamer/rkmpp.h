@@ -20,7 +20,7 @@
 // } mpp_encoder_runtime_s;
 
 #define PKT_SIZE    1024*4
-#ifdef WITH_MPP
+#ifdef WITH_RKMPP
 	#include "vpu.h"
 	#include "rk_mpi.h"
 	#include "rk_type.h"
@@ -40,7 +40,6 @@
 		unsigned		output_format;
 		unsigned		fps;
 		bool			allow_dma;
-		char			*pkt_buf;
     	MppBufferGroup buf_grp;
 		MppCtx ctx;
 		MppApi *api;
