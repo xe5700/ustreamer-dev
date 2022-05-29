@@ -39,7 +39,11 @@ mpp_encoder_s *mpp_h264_encoder_init(const char *name, const char *path, unsigne
 
     // #	undef OPTION
     MppEncCfg cfg;
-    mpp_enc_cfg_set_s32(cfg, "rc:bps_target", bitrate * 1000);
+    mpp_enc_cfg_init(&cfg);
+    bitrate*=1000;
+    mpp_enc_cfg_set_s32(cfg, "rc:bps_target", bitrate);
+	mpp_enc_cfg_set_s32(cfg, "rc:bps_max", bitrate * 17 / 16);
+	mpp_enc_cfg_set_s32(cfg, "rc:bps_min", bitrate * 15 / 16);
     mpp_enc_cfg_set_s32(cfg, "rc:gop", gop);
     // FIXME: 30 or 0? https://github.com/6by9/yavta/blob/master/yavta.c#L2100
     // По логике вещей правильно 0, но почему-то на низких разрешениях типа 640x480
@@ -62,7 +66,10 @@ mpp_encoder_s *mpp_mjpeg_encoder_init(const char *name, const char *path, unsign
 	// };
 
     MppEncCfg cfg;
-    mpp_enc_cfg_set_s32(cfg, "rc:bps_target", bitrate * 1000);
+    mpp_enc_cfg_init(&cfg);
+    mpp_enc_cfg_set_s32(cfg, "rc:bps_target", bitrate);
+	mpp_enc_cfg_set_s32(cfg, "rc:bps_max", bitrate);
+	mpp_enc_cfg_set_s32(cfg, "rc:bps_min", bitrate);
 	// FIXME: То же самое про 30 or 0, но еще даже не проверено на низких разрешениях
 	return _mpp_encoder_init(name, path, MPP_VIDEO_CodingMJPEG, 30, true, cfg);
 }
@@ -111,8 +118,8 @@ static mpp_encoder_s *_mpp_encoder_init(
     enc->fps = fps;
     enc->allow_dma = allow_dma;
     // enc->run = run;
-
-    memcpy(enc->cfg, &options, sizeof(MppEncCfg));
+    enc->cfg = options;
+    // memcpy(enc->cfg, &options, sizeof(MppEncCfg));
     enc->pkt_buf = (char *)malloc(PKT_SIZE);
 
     int ret = 0;
@@ -161,6 +168,7 @@ static mpp_encoder_s *_mpp_encoder_init(
     //         mpp_err("create default yuv image for test\n");
     //     }
     // }
+
     MppEncCfg cfg = enc->cfg;
 
     mpp_enc_cfg_set_s32(cfg, "prep:format", enc->output_format);
@@ -207,7 +215,15 @@ static mpp_encoder_s *_mpp_encoder_init(
     }
     // mpp_env_get_u32("split_mode", cfg, MPP_ENC_SPLIT_NONE);
     // mpp_env_get_u32("split_arg", cfg, 0);
+    
+	ret = enc->api->control(enc->ctx, MPP_ENC_SET_CFG, cfg);
+	if (ret != MPP_OK) {
+		LOGE("failed to set enc config: %d\n", ret);
+		goto err;
+	}
     return enc;
+    err:
+        return -1;
 }
 
 
@@ -215,7 +231,12 @@ int mpp_encoder_compress(mpp_encoder_s *enc, const frame_s *src, frame_s *dest, 
     int ret = 0;
     ret = _mpp_encoder_prepare(enc, src);
     if (ret) {
-        E_LOG_ERROR("encode put frame failed\n");
+        E_LOG_ERROR("encode set config failed\n");
+        goto error;
+    }
+    ret = _mpp_encoder_compress_raw(enc,src, dest);
+    if (ret) {
+        E_LOG_ERROR("encode compress failed\n");
         goto error;
     }
     error:
@@ -239,11 +260,13 @@ static int _mpp_encoder_prepare(mpp_encoder_s *enc, const frame_s *frame) {
     }
     MppFrame m_frame = &enc->frm;
     mpp_frame_init(&m_frame);
-    mpp_frame_set_buf_size(m_frame,frame->used);
     mpp_frame_set_buffer(m_frame, enc->frm_buf);
+    mpp_frame_set_buf_size(m_frame,frame->used);
     mpp_frame_set_width(m_frame, frame->width);
     mpp_frame_set_height(m_frame, frame->height);
-    mpp_frame_set_hor_stride(m_frame, frame->stride);
+    RK_U32 ver_stride = frame->used / frame->stride;
+    mpp_frame_set_ver_stride(m_frame, ver_stride);
+    int depth=8;
     MppFrameFormat m_frame_format;
     {
         MppFrameFormat f;
@@ -251,54 +274,79 @@ static int _mpp_encoder_prepare(mpp_encoder_s *enc, const frame_s *frame) {
         switch (frame->format)
         {
             case V4L2_PIX_FMT_ABGR32:
+                depth=32;
                 f = MPP_FMT_ABGR8888;
                 break;
             case V4L2_PIX_FMT_ARGB32:
+                depth=32;
                 f = MPP_FMT_ARGB8888;
                 break;
             case V4L2_PIX_FMT_BGR32:
+                depth=32;
                 f = MPP_FMT_BGR101010;
                 break;
             case V4L2_PIX_FMT_BGR24:
+                depth=24;
                 f = MPP_FMT_BGR888;
                 break;
             case V4L2_PIX_FMT_BGRA32:
+                depth=32;
                 f = MPP_FMT_BGRA8888;
                 break;
             case V4L2_PIX_FMT_RGB32:
+                depth=32;
                 f = MPP_FMT_RGB101010;
                 break;
             case V4L2_PIX_FMT_RGB444:
+                depth=8;
                 f = MPP_FMT_RGB444;
                 break;
             case V4L2_PIX_FMT_RGB555:
+                depth=8;
                 f = MPP_FMT_RGB555;
                 break;
             case V4L2_PIX_FMT_RGB565:
+                depth=8;
                 f = MPP_FMT_RGB565;
                 break;
             case V4L2_PIX_FMT_RGB24:
+                depth=24;
                 f = MPP_FMT_RGB888;
                 break;
             case V4L2_PIX_FMT_RGBA32:
+                depth=32;
                 f = MPP_FMT_RGBA8888;
                 break;
             case V4L2_PIX_FMT_YUV411P:
+                depth=8;
                 f = MPP_FMT_YUV411SP;
                 break;
+            case V4L2_PIX_FMT_NV12M:
+                depth=8;
+                f = MPP_FMT_YUV420SP;
+                break;
             case V4L2_PIX_FMT_YUV422P:
+                depth=8;
                 f = MPP_FMT_YUV422P;
                 break;
             case V4L2_PIX_FMT_YUV444:
+                depth=8;
                 f = MPP_FMT_YUV444P;
                 break;
         }
         m_frame_format = f;
     }
-
+    RK_U32 hor_stride = frame->stride * 8 / depth;
+    mpp_frame_set_hor_stride(m_frame, frame->stride * 8 / depth);
     mpp_frame_set_fmt(m_frame, m_frame_format);
     mpp_packet_init_with_buffer(&enc->pkt, enc->pkt_buf);
+    E_LOG_DEBUG("Apply input size: %dx%d(%dx%d)", frame->width, frame->height, hor_stride, ver_stride);
 	E_LOG_DEBUG("Encoder state: *** READY ***");
+    ret = enc->api->control(enc->ctx, MPP_ENC_SET_CFG, enc->cfg);
+    if (ret != MPP_OK) {
+		E_LOG_ERROR("failed to set enc config: %d\n", ret);
+		goto error;
+	}
 	return 0;
 	error:
 		_mpp_encoder_cleanup(enc);
