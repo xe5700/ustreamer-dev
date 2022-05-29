@@ -63,7 +63,7 @@ WITH_RKMPP ?= 0
 ifneq ($(call optbool,$(WITH_RKMPP)),)
 override _CFLAGS += -DWITH_RKMPP
 _USTR_LIBS += $(shell pkg-config --libs rockchip_mpp)
-INC += /usr/include/rockchip/
+INC += -I/usr/include/rockchip/
 endif
 
 WITH_SETPROCTITLE ?= 1
@@ -92,18 +92,18 @@ install-strip: install
 
 $(_USTR): $(_USTR_SRCS:%.c=$(_BUILD)/%.o)
 	$(info == LD $@)
-	@ $(CC) $^ -o $@ $(_LDFLAGS) $(_USTR_LIBS)
+	@ $(CC) $^ -o $@ $(_LDFLAGS) $(_USTR_LIBS) $(INC)
 
 
 $(_DUMP): $(_DUMP_SRCS:%.c=$(_BUILD)/%.o)
 	$(info == LD $@)
-	@ $(CC) $^ -o $@ $(_LDFLAGS) $(_DUMP_LIBS)
+	@ $(CC) $^ -o $@ $(_LDFLAGS) $(_DUMP_LIBS) $(INC)
 
 
 $(_BUILD)/%.o: %.c
 	$(info -- CC $<)
 	@ mkdir -p $(dir $@) || true
-	@ $(CC) $< -o $@ $(_CFLAGS)
+	@ $(CC) $< -o $@ $(_CFLAGS) $(INC)
 
 
 clean:
