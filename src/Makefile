@@ -5,9 +5,9 @@ CC ?= gcc
 CFLAGS ?= -O3
 LDFLAGS ?=
 
+_INC ?=
 
 # =====
-_USTR = ustreamer.bin
 _DUMP = ustreamer-dump.bin
 
 _CFLAGS = -MD -c -std=c11 -Wall -Wextra -D_GNU_SOURCE $(CFLAGS)
@@ -63,6 +63,7 @@ WITH_RKMPP ?= 0
 ifneq ($(call optbool,$(WITH_RKMPP)),)
 override _CFLAGS += -DWITH_RKMPP
 _USTR_LIBS += $(shell pkg-config --libs rockchip_mpp)
+INC += /usr/include/rockchip/
 endif
 
 WITH_SETPROCTITLE ?= 1
