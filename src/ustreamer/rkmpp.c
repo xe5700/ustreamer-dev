@@ -359,7 +359,7 @@ static int _mpp_encoder_compress_raw(mpp_encoder_s *enc, const frame_s *src, fra
 	E_LOG_DEBUG("Compressing new frame;");
     MppFrame m_frame = &enc->frm;
     ret = mpp_buffer_get(NULL, enc->frm_buf, src->used);
-    if(ret){
+    if(ret != MPP_OK){
         E_LOG_ERROR("Mpp buffer get failed;")
         goto error;
     }
