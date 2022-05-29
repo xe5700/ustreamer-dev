@@ -210,7 +210,7 @@ static bool _worker_run_job(worker_s *wr) {
 			wr->name, job->hw->buf.index);
 		cpu_encoder_compress(src, dest, ER(quality));
 
-	} else if (ER(type) == ENCODER_TYPE_HW) {
+	} else if (ER(type) == ENCODER_TYPE_HW || ER(type) == ENCODER_TYPE_RKMPP) {
 		LOG_VERBOSE("Compressing JPEG using HW (just copying): worker=%s, buffer=%u",
 			wr->name, job->hw->buf.index);
 		hw_encoder_compress(src, dest);
